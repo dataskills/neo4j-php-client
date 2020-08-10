@@ -51,14 +51,14 @@ class Connection
     /**
      * Connection constructor.
      *
-     * @param string                 $alias
-     * @param string                 $uri
+     * @param string $alias
+     * @param string $uri
      * @param BaseConfiguration|null $config
      */
     public function __construct($alias, $uri, $config = null)
     {
-        $this->alias = (string) $alias;
-        $this->uri = (string) $uri;
+        $this->alias = (string)$alias;
+        $this->uri = (string)$uri;
         $this->config = $config;
 
         $this->buildDriver();
@@ -81,9 +81,9 @@ class Connection
     }
 
     /**
-     * @param null  $query
+     * @param null $query
      * @param array $parameters
-     * @param null  $tag
+     * @param null $tag
      *
      * @return \GraphAware\Common\Driver\PipelineInterface
      */
@@ -96,13 +96,13 @@ class Connection
     }
 
     /**
-     * @param string      $statement
-     * @param array|null  $parameters
+     * @param string $statement
+     * @param array|null $parameters
      * @param null|string $tag
      *
+     * @return \GraphAware\Common\Result\Result
      * @throws Neo4jException
      *
-     * @return \GraphAware\Common\Result\Result
      */
     public function run($statement, $parameters = null, $tag = null)
     {
@@ -110,7 +110,7 @@ class Connection
         if (empty($statement)) {
             throw new \InvalidArgumentException(sprintf('Expected a non-empty Cypher statement, got "%s"', $statement));
         }
-        $parameters = (array) $parameters;
+        $parameters = (array)$parameters;
 
         try {
             $result = $this->session->run($statement, $parameters, $tag);
@@ -171,14 +171,16 @@ class Connection
         $params = parse_url($this->uri);
 
         if (preg_match('/bolt/', $this->uri)) {
-            $port = isset($params['port']) ? (int) $params['port'] : BoltDriver::DEFAULT_TCP_PORT;
+            $port = isset($params['port']) ? (int)$params['port'] : BoltDriver::DEFAULT_TCP_PORT;
             $uri = sprintf('%s://%s:%d', $params['scheme'], $params['host'], $port);
-            if($this->config === null){
-                if (isset($params['user']) && isset($params['pass'])) {
+
+            $config = ($this->config instanceof BoltConfiguration) ? $this->config : null;
+
+            if($config === null){
+                // if no further options are needed and the username and password are in the connection string
+                if (isset($params['user'], $params['pass'])) {
                     $config = BoltConfiguration::create()->withCredentials($params['user'], $params['pass']);
                 }
-            }else{
-                $config = $this->config;
             }
 
             $this->driver = BoltGraphDB::driver($uri, $config);
